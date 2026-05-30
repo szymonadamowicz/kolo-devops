@@ -41,8 +41,36 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
 
-      - name: Run tests
-        run: python -m pytest app/tests -v
+      - name: Run tests and write summary
+        run: |
+          set +e
+          python -m pytest app/tests -v | tee pytest.log
+          test_status=${PIPESTATUS[0]}
+          set -e
+
+          commit_name="$(git log -1 --pretty=%s)"
+          test_count="$(grep -Eo 'collected [0-9]+ items?' pytest.log | grep -Eo '[0-9]+' | tail -1)"
+          if [ -z "$test_count" ]; then
+            test_count="0"
+          fi
+
+          if [ "$test_status" -eq 0 ]; then
+            result="success"
+          else
+            result="failure"
+          fi
+
+          {
+            echo "## Test report"
+            echo
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Commit | $commit_name |"
+            echo "| Tests | $test_count |"
+            echo "| Result | $result |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          exit "$test_status"
 
   build:
     runs-on: ubuntu-latest
