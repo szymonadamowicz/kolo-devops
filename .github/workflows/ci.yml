@@ -43,9 +43,9 @@ jobs:
 
       - name: Run tests and write summary
         run: |
+          test_count="$(python -m pytest --collect-only -q app/tests | tail -n 1 | awk '{print $1}')"
           result="success"
-          python -m pytest app/tests -v --junitxml=pytest-report.xml || result="failure"
-          test_count="$(python -c "import xml.etree.ElementTree as ET; print(ET.parse('pytest-report.xml').getroot().attrib['tests'])")"
+          python -m pytest app/tests -v || result="failure"
 
           {
             echo "## Test report"
