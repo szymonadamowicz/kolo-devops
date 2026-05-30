@@ -43,34 +43,21 @@ jobs:
 
       - name: Run tests and write summary
         run: |
-          set +e
-          python -m pytest app/tests -v | tee pytest.log
-          test_status=${PIPESTATUS[0]}
-          set -e
-
-          commit_name="$(git log -1 --pretty=%s)"
-          test_count="$(grep -Eo 'collected [0-9]+ items?' pytest.log | grep -Eo '[0-9]+' | tail -1)"
-          if [ -z "$test_count" ]; then
-            test_count="0"
-          fi
-
-          if [ "$test_status" -eq 0 ]; then
-            result="success"
-          else
-            result="failure"
-          fi
+          result="success"
+          python -m pytest app/tests -v --junitxml=pytest-report.xml || result="failure"
+          test_count="$(python -c "import xml.etree.ElementTree as ET; print(ET.parse('pytest-report.xml').getroot().attrib['tests'])")"
 
           {
             echo "## Test report"
             echo
             echo "| Field | Value |"
             echo "| --- | --- |"
-            echo "| Commit | $commit_name |"
+            echo "| Commit | $(git log -1 --pretty=%s) |"
             echo "| Tests | $test_count |"
             echo "| Result | $result |"
           } >> "$GITHUB_STEP_SUMMARY"
 
-          exit "$test_status"
+          [ "$result" = "success" ]
 
   build:
     runs-on: ubuntu-latest
