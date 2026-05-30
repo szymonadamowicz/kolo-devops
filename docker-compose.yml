@@ -7,6 +7,8 @@ services:
       - app-data:/data
     expose:
       - "8000"
+    networks:
+      - backend-net
     healthcheck:
       test:
         [
@@ -29,6 +31,15 @@ services:
       - "8080:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - backend-net
 
 volumes:
   app-data:
+
+networks:
+  backend-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.50.0/24
